@@ -19,6 +19,11 @@ private:
   std::shared_ptr<damiao::Motor_Control> dm_;
 
   /*#########夹爪建模数据##########*/
+
+  // 夹爪位置范围( 单位: 米 )
+  double pos_lower_ = 0.0;
+  double pos_upper_ = 0.077;
+
   // (0-Max_tau) -> (0-10000) I_des = tau_ratio_ * Nm
   double tau_ratio_ = 1000;
 

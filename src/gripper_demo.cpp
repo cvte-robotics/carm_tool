@@ -20,7 +20,7 @@ std::string getCurrentWorkingDir() {
   return ".";
 }
 
-carm_gripper gripper(getCurrentWorkingDir() + "/../../tool_model.json");
+carm_gripper gripper(getCurrentWorkingDir() + "/../tool_model.json");
 std::atomic<bool> running_{false};
 
 void set_ready() {

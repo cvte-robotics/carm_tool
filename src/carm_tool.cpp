@@ -87,17 +87,20 @@ bool carm_gripper::loadKinematics(std::string path) {
       return false;
     }
 
+    pos_lower_ = grp_kin["pos_lower"].asDouble();
+    pos_upper_ = grp_kin["pos_upper"].asDouble();
     gripper_radius_ = grp_kin["gripper_radius"].asDouble();
     gripper_link_ = grp_kin["gripper_link"].asDouble();
     bias_theta_ = grp_kin["bias_theta"].asDouble();
     bias_distance_ = grp_kin["bias_distance"].asDouble();
     global_limit_ = {grp_kin["global_limit"][0].asDouble(),
                      grp_kin["global_limit"][1].asDouble()};
-    printf("load tool kine: gripper_radius: %lf, gripper_link: %lf, "
+    printf("load tool kine: pos_lower: %lf, pos_upper: %lf, gripper_radius: "
+           "%lf, gripper_link: %lf, "
            "bias_theta: %lf, "
            "bias_distance: %lf, global_limit: [%lf, %lf] \n",
-           gripper_radius_, gripper_link_, bias_theta_, bias_distance_,
-           global_limit_.first, global_limit_.second);
+           pos_lower_, pos_upper_, gripper_radius_, gripper_link_, bias_theta_,
+           bias_distance_, global_limit_.first, global_limit_.second);
   } catch (const std::exception &e) {
     // 捕获所有标准异常
     std::cerr << "[ERROR] 加载运动学参数时发生异常: " << e.what() << std::endl;

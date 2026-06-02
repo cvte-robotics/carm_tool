@@ -1,10 +1,14 @@
 {
-    "gripper_kinematics": 
-    {
+    "gripper_kinematics": {
+        "pos_lower": 0.0,
+        "pos_upper": 0.077,
         "gripper_radius": 0.022,
         "gripper_link": 0.032,
         "bias_theta": -0.63863,
         "bias_distance": -0.023,
-        "global_limit": [0, 0.1]
+        "global_limit": [
+            0,
+            0.1
+        ]
     }
 }
