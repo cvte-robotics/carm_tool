@@ -3,10 +3,8 @@
 #include <atomic>
 #include <cmath>
 #include <cstring> // 添加这个头文件用于strcmp
-#include <fstream>
 #include <iomanip>
 #include <iostream>
-#include <istream>
 #include <jsoncpp/json/json.h>
 #include <mutex>
 #include <signal.h>
@@ -33,9 +31,12 @@ private:
   // 常量: 连杆长度( 单位: 米 )
   double gripper_link_ = 0.032;
 
+  // 常量,滑块偏移量( 单位: 米 )
+  double slider_offset_ = 0.0;
+
   // 待标定量: 电机角度参考点( radians)
   // 夹爪滑轨轴线与电机0点的夹角，右手坐标系
-  double bias_theta_ = -0.63863;
+  double bias_theta_ = 2.50296;
 
   // 待标定量: 夹爪初始距离偏移量
   // 默认闭合为0点，闭合的时候连接点之间的距离
@@ -52,8 +53,8 @@ private:
   uint16_t max_vel_ = 10000; // 固定最快
 
   // get data
-  double cur_gripper_pos_;
-  double cur_gripper_tau_;
+  double cur_gripper_pos_ = 0;
+  double cur_gripper_tau_ = 0;
   int8_t gripper_status;
 
   double compute_angle(double a, double b, double c);
@@ -65,10 +66,10 @@ private:
                        double &force);
 
 public:
-  carm_gripper(std::string path);
+  explicit carm_gripper(const Json::Value &kinematics);
   ~carm_gripper();
 
-  bool loadKinematics(std::string path);
+  bool loadKinematics(const Json::Value &kinematics);
 
   /*初始化*/
   bool set_ready();

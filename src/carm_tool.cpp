@@ -18,11 +18,13 @@ void carm_gripper::gripper_inverse(const double &gap, const double &force,
   // 根据目标位置，计算目标角度
   double d = gap - bias_distance_;
   double hd = 0.5 * d;
-  double a = compute_angle(gripper_radius_, hd, gripper_link_);
-  angle = a - M_PI - bias_theta_;
+  double a1 = atan2(slider_offset_, hd);
+  double l = std::sqrt(slider_offset_ * slider_offset_ + hd * hd);
+  double a2 = compute_angle(gripper_radius_, l, gripper_link_);
+  angle = a1 + a2 - bias_theta_;
 
-  // 根据目标力矩和真实角度，计算力矩
-  double theta = actual_theta + bias_theta_ + M_PI;
+  // 根据目标力和真实角度，计算力矩
+  double theta = actual_theta + bias_theta_;
   tau = force / std::cos(M_PI_2 - theta);
   tau *= gripper_radius_;
 }
@@ -30,8 +32,9 @@ void carm_gripper::gripper_inverse(const double &gap, const double &force,
 void carm_gripper::gripper_forward(const double &angle, const double &tau,
                                    double &gap, double &force) {
   // 根据当前角度，计算当前位置
-  double theta = angle + bias_theta_ + M_PI; // actual theta
+  double theta = angle + bias_theta_; // actual theta
   double sinR = std::sin(theta) * gripper_radius_;
+  sinR -= slider_offset_;
   double hd = std::sqrt(gripper_link_ * gripper_link_ - sinR * sinR) +
               std::cos(theta) * gripper_radius_;
   double d = 2.0 * hd;
@@ -42,9 +45,9 @@ void carm_gripper::gripper_forward(const double &angle, const double &tau,
   force *= std::cos(M_PI_2 - theta);
 }
 
-carm_gripper::carm_gripper(std::string path) {
-  loadKinematics(path);
-  M1_ = std::make_shared<damiao::Motor>(damiao::DM4310, 0x07, 0x00);
+carm_gripper::carm_gripper(const Json::Value &kinematics) {
+  loadKinematics(kinematics);
+  M1_ = std::make_shared<damiao::Motor>(damiao::DM4310, 0x07, 0x87);
   // 初始化串口和电机控制
   serial_ = std::make_shared<SerialPort>("/dev/ttyACM0", B921600);
   dm_ = std::make_shared<damiao::Motor_Control>(serial_);
@@ -60,47 +63,32 @@ carm_gripper::carm_gripper(std::string path) {
 
 carm_gripper::~carm_gripper() { dm_->disable(*M1_); }
 
-bool carm_gripper::loadKinematics(std::string path) {
+bool carm_gripper::loadKinematics(const Json::Value &kinematics) {
   try {
-    // 1. 检查文件是否存在
-    std::ifstream file(path);
-    if (!file.is_open()) {
-      std::cout << "[INFO] 配置文件不存在，将使用默认参数" << std::endl;
+    std::cout << "load kinematics config:\n"
+              << kinematics.toStyledString() << std::endl;
+
+    if (!kinematics.isObject()) {
+      std::cout << "[WARN] 夹爪运动学配置不是 JSON 对象，将使用默认参数"
+                << std::endl;
       return false;
     }
 
-    // 2. 读取并解析JSON
-    Json::Value root;
-    Json::CharReaderBuilder reader;
-    std::string errs;
-
-    if (!Json::parseFromStream(reader, file, &root, &errs)) {
-      std::cout << "path: " << path << std::endl;
-      std::cout << "[WARN] JSON解析失败: " << errs << std::endl;
-      return false;
-    }
-
-    Json::Value grp_kin;
-    if (root.isMember("gripper_kinematics")) {
-      grp_kin = root["gripper_kinematics"];
-    } else {
-      return false;
-    }
-
-    pos_lower_ = grp_kin["pos_lower"].asDouble();
-    pos_upper_ = grp_kin["pos_upper"].asDouble();
-    gripper_radius_ = grp_kin["gripper_radius"].asDouble();
-    gripper_link_ = grp_kin["gripper_link"].asDouble();
-    bias_theta_ = grp_kin["bias_theta"].asDouble();
-    bias_distance_ = grp_kin["bias_distance"].asDouble();
-    global_limit_ = {grp_kin["global_limit"][0].asDouble(),
-                     grp_kin["global_limit"][1].asDouble()};
+    pos_lower_ = kinematics["pos_lower"].asDouble();
+    pos_upper_ = kinematics["pos_upper"].asDouble();
+    gripper_radius_ = kinematics["gripper_radius"].asDouble();
+    gripper_link_ = kinematics["gripper_link"].asDouble();
+    slider_offset_ = kinematics["slider_offset"].asDouble();
+    bias_theta_ = kinematics["bias_theta"].asDouble();
+    bias_distance_ = kinematics["bias_distance"].asDouble();
+    global_limit_ = {kinematics["global_limit"][0].asDouble(),
+                     kinematics["global_limit"][1].asDouble()};
     printf("load tool kine: pos_lower: %lf, pos_upper: %lf, gripper_radius: "
-           "%lf, gripper_link: %lf, "
-           "bias_theta: %lf, "
-           "bias_distance: %lf, global_limit: [%lf, %lf] \n",
-           pos_lower_, pos_upper_, gripper_radius_, gripper_link_, bias_theta_,
-           bias_distance_, global_limit_.first, global_limit_.second);
+           "%lf, gripper_link: %lf, slider_offset: %lf, "
+           "bias_theta: %lf, bias_distance: %lf, global_limit: [%lf, %lf] \n",
+           pos_lower_, pos_upper_, gripper_radius_, gripper_link_,
+           slider_offset_, bias_theta_, bias_distance_, global_limit_.first,
+           global_limit_.second);
   } catch (const std::exception &e) {
     // 捕获所有标准异常
     std::cerr << "[ERROR] 加载运动学参数时发生异常: " << e.what() << std::endl;

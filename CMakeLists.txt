@@ -16,8 +16,9 @@ add_library(${PROJECT_NAME} SHARED
     src/carm_tool.cpp
 )
 target_link_libraries(${PROJECT_NAME} 
-    PRIVATE 
+    PUBLIC
         jsoncpp
+    PRIVATE
         Threads::Threads
 )
 target_include_directories(${PROJECT_NAME}
@@ -36,6 +37,14 @@ target_link_libraries(gripper_demo_node
         Threads::Threads
 )
 target_include_directories(gripper_demo_node PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/include)
+
+add_executable(handle_demo_node src/handle_demo.cpp)
+target_link_libraries(handle_demo_node
+    PRIVATE
+        ${PROJECT_NAME}
+        Threads::Threads
+)
+target_include_directories(handle_demo_node PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/include)
 
 add_executable(screwdriver_demo_node src/screwdriver_demo.cpp)
 target_link_libraries(screwdriver_demo_node 
@@ -63,6 +72,7 @@ install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/include/. DESTINATION include
 
 install(TARGETS 
     gripper_demo_node 
+    handle_demo_node
     screwdriver_demo_node
     RUNTIME DESTINATION bin
 )
