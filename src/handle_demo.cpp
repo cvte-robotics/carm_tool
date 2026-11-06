@@ -33,6 +33,26 @@ Json::Value loadKinematics(const std::string &path, const std::string &name) {
   return root[name];
 }
 
+bool saveKinematics(const std::string &path, const std::string &name,
+                    const Json::Value &kinematics) {
+  std::ifstream input(path);
+  Json::Value root;
+  Json::CharReaderBuilder reader;
+  std::string errors;
+  if (!input.is_open() ||
+      !Json::parseFromStream(reader, input, &root, &errors) ||
+      !root[name].isObject())
+    return false;
+  root[name] = kinematics;
+  std::ofstream output(path);
+  if (!output.is_open())
+    return false;
+  Json::StreamWriterBuilder writer;
+  writer["indentation"] = "    ";
+  output << Json::writeString(writer, root) << '\n';
+  return output.good();
+}
+
 carm_gripper gripper(loadKinematics(getCurrentWorkingDir() +
                                         "/../../tool_model.json",
                                     "handle_kinematics"));
@@ -47,6 +67,7 @@ void print_help() {
   s <gap> <force>   设置手柄开口距离(m)和夹持力(N)
   p                 读取当前开口距离(m)和夹持力(N)
   sz                设置当前位置为零点
+  mz                标定零点并保存运动学参数
   c                 检查电机 ID 和通信状态
   h / help          显示本帮助
   q                 退出程序
@@ -92,6 +113,15 @@ void set_zero() {
   gripper.set_zero();
 }
 
+void mark_zero() {
+  const std::string path = getCurrentWorkingDir() + "/../../tool_model.json";
+  if (gripper.mark_zero() &&
+      saveKinematics(path, "handle_kinematics", gripper.getKinematics()))
+    printf("[CMD] 零点标定完成，配置已保存\n");
+  else
+    printf("[ERROR] 零点标定或配置保存失败\n");
+}
+
 void check_ID() {
   std::cout << "[STATE] 电机 ID 和通信状态: "
             << (gripper.check_ID() ? "正常" : "异常") << std::endl;
@@ -112,9 +142,10 @@ int main(int argc, char const *argv[]) {
 
   std::string cmd;
   const std::map<std::string, void (*)()> cmd_handle = {
-      {"r", &set_ready},   {"dis", &set_disable}, {"dg", &set_drag},
-      {"s", &set_gripper}, {"p", &get_gripper},   {"sz", &set_zero},
-      {"c", &check_ID},    {"h", &print_help},    {"help", &print_help}};
+      {"r", &set_ready},    {"dis", &set_disable}, {"dg", &set_drag},
+      {"s", &set_gripper},  {"p", &get_gripper},   {"sz", &set_zero},
+      {"mz", &mark_zero},   {"c", &check_ID},      {"h", &print_help},
+      {"help", &print_help}};
   while (std::cin >> cmd) {
     try {
       if (cmd == "q")

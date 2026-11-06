@@ -17,6 +17,7 @@ private:
   std::shared_ptr<damiao::Motor_Control> dm_;
 
   /*#########夹爪建模数据##########*/
+  Json::Value kinematics_;
 
   // 夹爪位置范围( 单位: 米 )
   double pos_lower_ = 0.0;
@@ -65,6 +66,8 @@ private:
   void gripper_forward(const double &angle, const double &tau, double &gap,
                        double &force);
 
+  bool gripper_mark_zero(const double &actual_theta);
+
 public:
   explicit carm_gripper(const Json::Value &kinematics);
   ~carm_gripper();
@@ -85,6 +88,8 @@ public:
   void get_gripper(double &gap, double &force);
   /*设置零点*/
   bool set_zero();
+  bool mark_zero();
+  Json::Value getKinematics() const { return kinematics_; }
   /*查看ID是否正确*/
   bool check_ID();
 };

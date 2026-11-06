@@ -45,6 +45,38 @@ void carm_gripper::gripper_forward(const double &angle, const double &tau,
   force *= std::cos(M_PI_2 - theta);
 }
 
+bool carm_gripper::gripper_mark_zero(const double &actual_theta) {
+  // 当前电机角度对应的连杆几何位置，作为夹爪闭合零位。
+  double theta = actual_theta + bias_theta_; // actual theta
+  double sinR = std::sin(theta) * gripper_radius_;
+  sinR -= slider_offset_;
+  double hd = std::sqrt(gripper_link_ * gripper_link_ - sinR * sinR) +
+              std::cos(theta) * gripper_radius_;
+  double new_bias_distance = -2.0 * hd;
+  double new_pos_upper = global_limit_.second + new_bias_distance;
+
+  // 先校验新位置上限是否合法，再写入，避免标定出非法零位参数。
+  if (new_pos_upper > pos_lower_) {
+    bias_distance_ = new_bias_distance;
+    pos_upper_ = new_pos_upper;
+    kinematics_["bias_distance"] = bias_distance_;
+    kinematics_["pos_upper"] = pos_upper_;
+    printf("mark_zero success, new_bias_distance: %lf, new_limit: %lf\n",
+           bias_distance_, new_pos_upper);
+    return true;
+  } else {
+    printf("mark_zero failed, new_limit <= limit_lower, new_limit: %lf, "
+           "limit_lower: %lf\n",
+           new_pos_upper, pos_lower_);
+    return false;
+  }
+}
+
+bool carm_gripper::mark_zero() {
+  std::lock_guard<std::mutex> lock(data_mtx_);
+  return gripper_mark_zero(cur_gripper_pos_);
+}
+
 carm_gripper::carm_gripper(const Json::Value &kinematics) {
   loadKinematics(kinematics);
   M1_ = std::make_shared<damiao::Motor>(damiao::DM4310, 0x07, 0x87);
@@ -83,6 +115,7 @@ bool carm_gripper::loadKinematics(const Json::Value &kinematics) {
     bias_distance_ = kinematics["bias_distance"].asDouble();
     global_limit_ = {kinematics["global_limit"][0].asDouble(),
                      kinematics["global_limit"][1].asDouble()};
+    kinematics_ = kinematics;
     printf("load tool kine: pos_lower: %lf, pos_upper: %lf, gripper_radius: "
            "%lf, gripper_link: %lf, slider_offset: %lf, "
            "bias_theta: %lf, bias_distance: %lf, global_limit: [%lf, %lf] \n",

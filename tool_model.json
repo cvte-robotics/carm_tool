@@ -1,28 +1,28 @@
 {
     "gripper_kinematics": {
-        "pos_lower": 0.0,
-        "pos_upper": 0.077,
-        "gripper_radius": 0.022,
-        "gripper_link": 0.032,
-        "slider_offset": 0.0,
-        "bias_theta": 2.50296,
         "bias_distance": -0.023,
+        "bias_theta": 0.501084,
         "global_limit": [
             0,
-            0.1
-        ]
+            0.099
+        ],
+        "gripper_link": 0.032,
+        "gripper_radius": 0.022,
+        "pos_lower": 0,
+        "pos_upper": 0.077,
+        "slider_offset": 0
     },
     "handle_kinematics": {
-        "pos_lower": 0.0,
-        "pos_upper": 0.056,
-        "gripper_radius": 0.035,
-        "gripper_link": 0.02289,
-        "slider_offset": 0.017,
-        "bias_theta": 1.4798647,
         "bias_distance": -0.035,
+        "bias_theta": 0.8084365,
         "global_limit": [
             0,
             0.091
-        ]
+        ],
+        "gripper_link": 0.02289,
+        "gripper_radius": 0.035,
+        "pos_lower": 0,
+        "pos_upper": 0.056,
+        "slider_offset": 0.017
     }
 }
